@@ -15,12 +15,4 @@ export class MemoryStore implements CacheStore {
   delete(key: string): void {
     this.entries.delete(key);
   }
-
-  clear(): void {
-    this.entries.clear();
-  }
-
-  get size(): number {
-    return this.entries.size;
-  }
 }

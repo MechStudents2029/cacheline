@@ -11,13 +11,16 @@ export class Singleflight {
       return existing as Promise<T>;
     }
 
-    const pending: Promise<T> = Promise.resolve()
-      .then(fn)
-      .finally(() => {
+    let pending!: Promise<T>;
+    pending = (async () => {
+      try {
+        return await fn();
+      } finally {
         if (this.inflight.get(key) === pending) {
           this.inflight.delete(key);
         }
-      });
+      }
+    })();
 
     this.inflight.set(key, pending);
     return pending;
