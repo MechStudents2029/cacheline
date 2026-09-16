@@ -6,3 +6,5 @@ Dated entries for work that landed on `main`. Commit author is Adam Rouzaqui (`a
 - Parallel systems work: RelayKit + Ris Maroc (other repos)
 ## 2026-09-15
 - Cacheline Day 1: GetOrSet + TTL + singleflight (PR #1)
+## 2026-09-16
+- Merged Cacheline Day 1 to main
