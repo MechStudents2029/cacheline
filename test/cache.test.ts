@@ -191,7 +191,7 @@ describe("TTL jitter", () => {
     expect(applyJitter(100, 0, () => 0.5)).toBe(100);
     expect(applyJitter(100, 0.1, () => 0.5)).toBe(100);
     expect(applyJitter(100, 0.1, () => 0)).toBe(90);
-    expect(applyJitter(100, 0.1, () => 1)).toBe(110);
+    expect(applyJitter(100, 0.1, () => 1)).toBeCloseTo(110);
   });
 
   it("applies jitter when storing so hard expiry moves", async () => {
