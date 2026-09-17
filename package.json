@@ -2,7 +2,7 @@
   "name": "cacheline",
   "version": "0.1.0",
   "private": true,
-  "description": "TypeScript caching toolkit: GetOrSet, TTL, and singleflight (in-memory).",
+  "description": "TypeScript caching toolkit: GetOrSet, TTL jitter, soft TTL / early refresh, and singleflight (in-memory).",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
