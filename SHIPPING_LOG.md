@@ -12,3 +12,7 @@ Dated entries for work that landed on `main`. Commit author is Adam Rouzaqui (`a
 - Cacheline Day 2: soft TTL, jitter, stampede protection (PR #2)
 ## 2026-09-18
 - Merged Cacheline Day 2 to main
+
+## Note
+- Future cloud-agent commits should use co-author or squash-merge under this email so the contribution graph stays green.
+
