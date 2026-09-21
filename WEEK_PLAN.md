@@ -10,7 +10,7 @@
 - TTL jitter
 - Tests for thundering herd
 
-## Day 3 — Redis backend (optional)
+## Day 3 — Redis backend (optional) ✅
 - docker-compose Redis
 - Redis store implementation
 - Integration tests skip if Redis down

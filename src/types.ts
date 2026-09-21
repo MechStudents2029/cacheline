@@ -12,8 +12,8 @@ export type CacheEntry = {
 };
 
 /**
- * Persistence for cache entries. Day 1 ships an in-memory store;
- * later days can add Redis without changing GetOrSet.
+ * Persistence for cache entries. In-memory is the default;
+ * Redis is an optional backend (`RedisStore`) with the same contract.
  */
 export interface CacheStore {
   get(key: string): CacheEntry | undefined | Promise<CacheEntry | undefined>;
