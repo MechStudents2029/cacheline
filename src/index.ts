@@ -5,6 +5,7 @@ export { Singleflight } from "./singleflight.js";
 export type { RedisStoreClient, RedisStoreOptions } from "./redis-store.js";
 export type {
   CacheEntry,
+  CacheMetrics,
   CacheStore,
   CachelineOptions,
   GetOrSetOptions,

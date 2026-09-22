@@ -23,6 +23,17 @@ export interface CacheStore {
 
 export type Loader<T> = () => T | Promise<T>;
 
+/**
+ * Counters for `Cacheline.getOrSet`.
+ * `hits` are fresh or soft-stale serves. `misses` start a loader.
+ * `coalesced` calls found no live entry and joined an in-flight load.
+ */
+export type CacheMetrics = {
+  hits: number;
+  misses: number;
+  coalesced: number;
+};
+
 export type GetOrSetOptions = {
   /** Time-to-live in milliseconds. Overrides `defaultTtlMs`. */
   ttlMs?: number;
