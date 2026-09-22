@@ -15,7 +15,7 @@
 - Redis store implementation
 - Integration tests skip if Redis down
 
-## Day 4 — Metrics + tiny HTTP demo
+## Day 4 — Metrics + tiny HTTP demo ✅
 - Hit/miss/coalesce counters
 - Minimal local demo server using a free public API (JSONPlaceholder) as loader
 
