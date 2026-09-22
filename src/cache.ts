@@ -10,6 +10,7 @@ import {
 import type {
   CacheEntry,
   CachelineOptions,
+  CacheMetrics,
   CacheStore,
   GetOrSetOptions,
   Loader,
@@ -47,6 +48,8 @@ function resolveTtlMs(
  * GetOrSet cache: return a live entry, or load once (singleflight) and store
  * with TTL. Optional soft TTL serves stale values and refreshes in the
  * background; optional jitter spreads expiry times.
+ *
+ * `metrics()` counts hits, misses, and coalesced singleflight waits.
  */
 export class Cacheline {
   private readonly store: CacheStore;
@@ -57,6 +60,11 @@ export class Cacheline {
   private readonly now: () => number;
   private readonly random: () => number;
   private readonly singleflight = new Singleflight();
+  private readonly counters: CacheMetrics = {
+    hits: 0,
+    misses: 0,
+    coalesced: 0,
+  };
 
   constructor(options: CachelineOptions = {}) {
     this.store = options.store ?? new MemoryStore();
@@ -83,15 +91,35 @@ export class Cacheline {
     const ttl = this.resolveTtlConfig(options);
 
     const hit = await this.lookup<T>(key);
-    if (hit.status === "fresh") {
-      return hit.value;
-    }
-    if (hit.status === "stale") {
-      this.scheduleRefresh(key, loader, ttl);
+    if (hit.status === "fresh" || hit.status === "stale") {
+      this.counters.hits += 1;
+      if (hit.status === "stale") {
+        this.scheduleRefresh(key, loader, ttl);
+      }
       return hit.value;
     }
 
+    if (this.singleflight.isInFlight(key)) {
+      this.counters.coalesced += 1;
+    } else {
+      this.counters.misses += 1;
+    }
     return this.loadAndStore(key, loader, ttl);
+  }
+
+  /**
+   * Snapshot of hit / miss / coalesce counters. Mutating the result does not
+   * change the cache. `get` does not move these counters.
+   */
+  metrics(): CacheMetrics {
+    return { ...this.counters };
+  }
+
+  /** Zero hit / miss / coalesce counters. */
+  resetMetrics(): void {
+    this.counters.hits = 0;
+    this.counters.misses = 0;
+    this.counters.coalesced = 0;
   }
 
   /** Cached value within hard TTL (including stale), or `undefined`. */

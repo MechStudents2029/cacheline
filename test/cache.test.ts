@@ -170,9 +170,123 @@ describe("Singleflight", () => {
 
     const requests = [sf.do("n", fn), sf.do("n", fn), sf.do("n", fn)];
     expect(fn).toHaveBeenCalledTimes(1);
+    expect(sf.isInFlight("n")).toBe(true);
 
     load.resolve(42);
     await expect(Promise.all(requests)).resolves.toEqual([42, 42, 42]);
+    expect(sf.isInFlight("n")).toBe(false);
+  });
+});
+
+describe("Cacheline metrics", () => {
+  const empty = { hits: 0, misses: 0, coalesced: 0 };
+
+  it("counts a miss, then a hit, and ignores get()", async () => {
+    const cache = new Cacheline({ defaultTtlMs: 5_000 });
+    const loader = vi.fn().mockResolvedValue("payload");
+
+    expect(cache.metrics()).toEqual(empty);
+    await cache.getOrSet("item", loader);
+    expect(cache.metrics()).toEqual({ hits: 0, misses: 1, coalesced: 0 });
+
+    await cache.getOrSet("item", loader);
+    expect(cache.metrics()).toEqual({ hits: 1, misses: 1, coalesced: 0 });
+    expect(loader).toHaveBeenCalledTimes(1);
+
+    await cache.get("item");
+    await cache.get("missing");
+    expect(cache.metrics()).toEqual({ hits: 1, misses: 1, coalesced: 0 });
+  });
+
+  it("counts waiters that share an in-flight load as coalesced", async () => {
+    const cache = new Cacheline({ defaultTtlMs: 5_000 });
+    const load = deferred<string>();
+    const loader = vi.fn(() => load.promise);
+
+    const requests = [
+      cache.getOrSet("user:1", loader),
+      cache.getOrSet("user:1", loader),
+      cache.getOrSet("user:1", loader),
+    ];
+
+    await flushMicrotasks();
+    expect(cache.metrics()).toEqual({ hits: 0, misses: 1, coalesced: 2 });
+    expect(loader).toHaveBeenCalledTimes(1);
+
+    load.resolve("alice");
+    await Promise.all(requests);
+
+    await cache.getOrSet("user:1", loader);
+    expect(cache.metrics()).toEqual({ hits: 1, misses: 1, coalesced: 2 });
+    expect(loader).toHaveBeenCalledTimes(1);
+  });
+
+  it("counts a separate miss per key", async () => {
+    const cache = new Cacheline({ defaultTtlMs: 5_000 });
+    await cache.getOrSet("a", async () => "A");
+    await cache.getOrSet("b", async () => "B");
+    expect(cache.metrics()).toEqual({ hits: 0, misses: 2, coalesced: 0 });
+  });
+
+  it("counts a failed load as a miss and coalesced waiters still share it", async () => {
+    const cache = new Cacheline({ defaultTtlMs: 5_000 });
+    const load = deferred<string>();
+    const loader = vi.fn(() => load.promise);
+
+    const requests = [cache.getOrSet("k", loader), cache.getOrSet("k", loader)];
+    await flushMicrotasks();
+    load.reject(new Error("boom"));
+    await expect(Promise.allSettled(requests)).resolves.toEqual([
+      { status: "rejected", reason: expect.objectContaining({ message: "boom" }) },
+      { status: "rejected", reason: expect.objectContaining({ message: "boom" }) },
+    ]);
+    expect(cache.metrics()).toEqual({ hits: 0, misses: 1, coalesced: 1 });
+
+    await expect(cache.getOrSet("k", async () => "recovered")).resolves.toBe(
+      "recovered",
+    );
+    expect(cache.metrics()).toEqual({ hits: 0, misses: 2, coalesced: 1 });
+  });
+
+  it("counts a soft-stale serve as a hit without counting the background refresh", async () => {
+    let now = 0;
+    const cache = new Cacheline({
+      defaultTtlMs: 100,
+      softTtlRatio: 0.8,
+      now: () => now,
+    });
+    const load = deferred<string>();
+    const loader = vi.fn(() => load.promise);
+
+    await cache.getOrSet("k", async () => "v1");
+    expect(cache.metrics()).toEqual({ hits: 0, misses: 1, coalesced: 0 });
+
+    now = 80;
+    await expect(cache.getOrSet("k", loader)).resolves.toBe("v1");
+    await expect(cache.getOrSet("k", loader)).resolves.toBe("v1");
+    await flushMicrotasks();
+    expect(loader).toHaveBeenCalledTimes(1);
+    expect(cache.metrics()).toEqual({ hits: 2, misses: 1, coalesced: 0 });
+
+    load.resolve("v2");
+    await vi.waitFor(async () => {
+      expect(await cache.get<string>("k")).toBe("v2");
+    });
+    expect(cache.metrics()).toEqual({ hits: 2, misses: 1, coalesced: 0 });
+  });
+
+  it("returns a copy and resetMetrics zeroes the counters", async () => {
+    const cache = new Cacheline({ defaultTtlMs: 5_000 });
+    await cache.getOrSet("k", async () => 1);
+    const snap = cache.metrics();
+    snap.hits = 99;
+    snap.misses = 99;
+    expect(cache.metrics()).toEqual({ hits: 0, misses: 1, coalesced: 0 });
+
+    cache.resetMetrics();
+    expect(cache.metrics()).toEqual(empty);
+    await cache.getOrSet("k", async () => 2);
+    expect(cache.metrics()).toEqual({ hits: 1, misses: 0, coalesced: 0 });
   });
 });
 

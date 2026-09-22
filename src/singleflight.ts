@@ -5,6 +5,11 @@
 export class Singleflight {
   private readonly inflight = new Map<string, Promise<unknown>>();
 
+  /** True while a `do` call for `key` has not settled. */
+  isInFlight(key: string): boolean {
+    return this.inflight.has(key);
+  }
+
   do<T>(key: string, fn: () => Promise<T>): Promise<T> {
     const existing = this.inflight.get(key);
     if (existing) {
