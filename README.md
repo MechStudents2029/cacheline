@@ -39,6 +39,7 @@ Watch mode: `npm run test:watch`.
 ## Benchmarks
 
 In-memory only. No network and no Redis.
+Entry script: `bench/get-or-set.bench.ts`.
 
 ```bash
 npm run bench
