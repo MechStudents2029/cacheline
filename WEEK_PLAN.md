@@ -22,3 +22,4 @@
 ## Day 5 — Benchmarks + README polish ✅
 - Microbench script
 - Architecture + resume bullets
+- Closed on main 2026-09-23
