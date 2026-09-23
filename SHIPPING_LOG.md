@@ -20,6 +20,7 @@ Dated entries for work that landed on `main`. Commit author is Adam Rouzaqui (`a
 - Cacheline Day 5: benchmarks and README polish (PR #5)
 - Microbench cases on main: warm hit, cold miss, and 32-waiter singleflight
 - Bench stays local: bench/get-or-set.bench.ts uses no network and no Redis
+- README resume bullets and architecture notes landed with the Day 5 merge
 
 ## Note
 - Future cloud-agent commits should use co-author or squash-merge under this email so the contribution graph stays green.
