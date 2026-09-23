@@ -19,6 +19,6 @@
 - Hit/miss/coalesce counters
 - Minimal local demo server using a free public API (JSONPlaceholder) as loader
 
-## Day 5 — Benchmarks + README polish
+## Day 5 — Benchmarks + README polish ✅
 - Microbench script
 - Architecture + resume bullets
